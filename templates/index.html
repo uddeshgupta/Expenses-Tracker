@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 700px; margin-top: 30px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
+        .btn-custom { background-color: #007bff; color: white; }
+        .btn-custom:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center">Expense Tracker</h2>
+
+    <form id="expenseForm">
+        <input type="hidden" id="expenseId">
+        <div class="mb-3">
+            <label for="name" class="form-label">Expense Name</label>
+            <input type="text" class="form-control" id="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="amount" class="form-label">Amount (₹)</label>
+            <input type="number" class="form-control" id="amount" required>
+        </div>
+        <div class="mb-3">
+            <label for="category" class="form-label">Category</label>
+            <select class="form-control" id="category" required>
+                <option value="Food">Food</option>
+                <option value="Home">Home</option>
+                <option value="Work">Work</option>
+                <option value="Fun">Fun</option>
+                <option value="Music">Music</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-custom w-100">Add Expense</button>
+    </form>
+
+    <div class="mt-4">
+        <h3 class="text-center">Expense List</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Name</th>
+                    <th>Amount (₹)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="expenseTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <h3 class="text-center">Category Breakdown</h3>
+        <canvas id="expenseChart"></canvas>
+    </div>
+</div>
+
+<script>
+    async function fetchExpenses() {
+        const response = await fetch("/expenses");
+        const expenses = await response.json();
+
+        let tableBody = document.getElementById("expenseTableBody");
+        tableBody.innerHTML = "";
+        let categoryData = {};
+
+        expenses.forEach(expense => {
+            let row = `<tr>
+                <td>${expense.category}</td>
+                <td>${expense.name}</td>
+                <td>₹${expense.amount}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="editExpense(${expense.id}, '${expense.name}', ${expense.amount}, '${expense.category}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteExpense(${expense.id})">Delete</button>
+                </td>
+            </tr>`;
+            tableBody.innerHTML += row;
+
+            categoryData[expense.category] = (categoryData[expense.category] || 0) + expense.amount;
+        });
+
+        updateChart(categoryData);
+    }
+
+    async function addExpense(event) {
+        event.preventDefault();
+        const name = document.getElementById("name").value;
+        const amount = document.getElementById("amount").value;
+        const category = document.getElementById("category").value;
+
+        await fetch("/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, amount, category })
+        });
+
+        document.getElementById("expenseForm").reset();
+        fetchExpenses();
+    }
+
+    async function deleteExpense(id) {
+        await fetch(`/delete/${id}`, { method: "DELETE" });
+        fetchExpenses();
+    }
+
+    function updateChart(data) {
+        let ctx = document.getElementById("expenseChart").getContext("2d");
+        new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: Object.keys(data),
+                datasets: [{ data: Object.values(data), backgroundColor: ["red", "blue", "green", "yellow", "purple", "orange"] }]
+            }
+        });
+    }
+
+    document.getElementById("expenseForm").addEventListener("submit", addExpense);
+    fetchExpenses();
+</script>
+
+</body>
+</html>

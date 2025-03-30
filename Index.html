@@ -41,7 +41,7 @@
             const amount = document.getElementById("expenseAmount").value;
             const category = document.getElementById("expenseCategory").value;
             
-            const response = await fetch("/add_expense", {
+            const response = await fetch("/add", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name, amount, category })
@@ -54,7 +54,7 @@
         }
         
         async function fetchExpenses() {
-            const response = await fetch("/get_expenses");
+            const response = await fetch("/get");
             const data = await response.json();
             
             const categoryTotals = {};
